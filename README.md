@@ -54,20 +54,16 @@ Then, open your web browser to http://YOUR_SERVER_IP:3333
 
 ## Install as a Systemd Service (Recommended for Raspberry Pi)
 
-1) **Create a startup script named start.sh in the project directory with the following content:**
+1) **Make the script start.sh executable**
 ```bash
-#!/bin/bash
-# Navigate to the script's directory, regardless of where it's called from
-cd "$(dirname "$0")"
-# Execute the server with the absolute path to node for reliability
-/usr/bin/node server.js
-```
-Make the script executable
-```bash
-chmod +x start.sh
+sudo chmod +x start.sh
 ```
 
 2) **Create a service file at /etc/systemd/system/ais-interceptor.service with the following content**
+```bash
+sudo nano /etc/systemd/system/ais-interceptor.service
+```
+Copy inside the file, save CTRL+X and Y to confirm:
 ```bash
 [Unit]
 Description=AIS Interceptor Node.js Server
