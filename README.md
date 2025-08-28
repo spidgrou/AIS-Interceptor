@@ -38,19 +38,23 @@ All configuration is located at the top of the `server.js` file. Modify the foll
 ### Manual Start (for testing)
 ```bash
 node server.js
+```
 
 Then, open your web browser to http://YOUR_SERVER_IP:3333.
 Install as a Systemd Service (Recommended for Raspberry Pi)
 
-1) Create a startup script named start.sh in the project directory with the following content:
+1) **Create a startup script named start.sh in the project directory with the following content:**
+```bash
 #!/bin/bash
 # Navigate to the script's directory, regardless of where it's called from
 cd "$(dirname "$0")"
 # Execute the server with the absolute path to node for reliability
 /usr/bin/node server.js
+```
 
-2) Make the script executable: chmod +x start.sh.
+2) **Make the script executable: chmod +x start.sh.**
 Create a service file at /etc/systemd/system/ais-interceptor.service with the following content:
+```bash
 [Unit]
 Description=AIS Interceptor Node.js Server
 After=network.target
@@ -65,15 +69,19 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
+```
 
-3) Remember to customize WorkingDirectory and ExecStart with your absolute paths.
+3) **Remember to customize WorkingDirectory and ExecStart with your absolute paths.**
 Enable and start the service:
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable ais-interceptor.service
 sudo systemctl start ais-interceptor.service
+```
 
 You can check its status anytime with
-  sudo systemctl status ais-interceptor.service
-
+```bash
+sudo systemctl status ais-interceptor.service
+```
 
 
