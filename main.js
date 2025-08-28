@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let myShip = { lat: null, lon: null, sog: null, cog: null };
     let realMyShip = { lat: null, lon: null, sog: null, cog: null };
     let aisTargets = {}, selectedTargetMmsi = null, ws;
-    let currentSort = { column: 'distance', direction: 'asc' }; // Ordina per distanza di default
+    let currentSort = { column: 'distance', direction: 'asc' }; // Sort by distance by default
     const allDomElements = {
         status: document.getElementById('status'),
         myLat: document.getElementById('my-lat'), myLon: document.getElementById('my-lon'),
@@ -21,14 +21,20 @@ document.addEventListener('DOMContentLoaded', function() {
         simSogInput: document.getElementById('sim-sog-input'),
     };
 
+    // Ship type description map, now in English
     function getShipTypeDescription(typeId) {
-        if (!typeId) return 'N/D';
+        if (!typeId) return 'N/A';
         const types = {
-            20: "WIG", 30: "Pesca", 31: "Traino", 32: "Traino >200m", 33: "Dragaggio", 34: "Immersione", 35: "Oper. Militari", 36: "Vela", 37: "Divertirsi",
-            40: "Alta Velocità", 50: "Pilota", 51: "Ricerca/Soccorso", 52: "Rimorchiatore", 53: "Tender", 54: "Anti-inquinamento", 55: "Forze dell'ordine", 58: "Medico",
-            60: "Passeggeri", 70: "Cargo", 80: "Petroliera", 90: "Altro"
+            20: "WIG", 21: "WIG", 22: "WIG",
+            30: "Fishing", 31: "Towing", 32: "Towing (>200m)", 33: "Dredging", 34: "Diving", 35: "Military", 36: "Sailing", 37: "Pleasure Craft",
+            40: "High Speed Craft", 41: "High Speed Craft", 42: "High Speed Craft",
+            50: "Pilot Vessel", 51: "Search & Rescue", 52: "Tug", 53: "Port Tender", 54: "Anti-pollution", 55: "Law Enforce", 58: "Medical",
+            60: "Passenger", 61: "Passenger", 62: "Passenger",
+            70: "Cargo", 71: "Cargo (Haz-A)", 72: "Cargo (Haz-B)",
+            80: "Tanker", 81: "Tanker (Haz-A)", 82: "Tanker (Haz-B)",
+            90: "Other"
         };
-        return types[typeId] || types[Math.floor(typeId / 10) * 10] || 'N/D';
+        return types[typeId] || types[Math.floor(typeId / 10) * 10] || 'N/A';
     }
     
     function formatCoordinate(decimal, type) {
@@ -53,27 +59,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!selectedTargetMmsi || !aisTargets[selectedTargetMmsi] || myShip.lat === null) return;
         const target = aisTargets[selectedTargetMmsi];
         if ([myShip.sog, target.lat, target.lon, target.sog, target.cog].some(v => v === null || v === undefined)) {
-            allDomElements.course.textContent = 'Dati insuff.';
-            allDomElements.course.title = 'L\'applicazione non ha ancora tutte le informazioni necessarie per poter eseguire il calcolo.';
+            allDomElements.course.textContent = 'Insuff. Data';
+            allDomElements.course.title = 'The application does not yet have all the necessary information to perform the calculation.';
             return;
         }
         if (myShip.sog < 0.2) {
-            allDomElements.course.textContent = 'Fermo';
-            allDomElements.course.title = 'La tua barca è ferma o si muove troppo lentamente per poter intercettare.';
+            allDomElements.course.textContent = 'Stationary';
+            allDomElements.course.title = 'Your vessel is stationary or moving too slowly to intercept.';
             return;
         }
         const toRad = deg => deg * Math.PI / 180, toDeg = rad => (rad * 180 / Math.PI + 360) % 360;
         const bearingToTarget = toDeg(Math.atan2(Math.sin(toRad(target.lon - myShip.lon)) * Math.cos(toRad(target.lat)), Math.cos(toRad(myShip.lat)) * Math.sin(toRad(target.lat)) - Math.sin(toRad(myShip.lat)) * Math.cos(toRad(target.lat)) * Math.cos(toRad(target.lon - myShip.lon))));
         const angleA_rad = toRad(target.cog - bearingToTarget);
         if (myShip.sog < (target.sog * Math.abs(Math.sin(angleA_rad))) && myShip.sog < target.sog) {
-            allDomElements.course.textContent = 'Lento';
-            allDomElements.course.title = 'La tua velocità attuale non è sufficiente per intercettare il target. Devi aumentare la velocità.';
+            allDomElements.course.textContent = 'Too Slow';
+            allDomElements.course.title = 'Your current speed is insufficient to intercept the target. You must increase speed.';
             return;
         }
         const angleB_rad = Math.asin((target.sog * Math.sin(angleA_rad)) / myShip.sog);
         const interceptionCourse = (bearingToTarget + toDeg(angleB_rad)) % 360;
         allDomElements.course.textContent = String(Math.round(interceptionCourse)).padStart(3, '0') + '°';
-        allDomElements.course.title = 'Rotta calcolata da seguire per l\'intercettazione.';
+        allDomElements.course.title = 'Calculated course to steer for interception.';
         const distance = calculateDistance(myShip.lat, myShip.lon, target.lat, target.lon);
         const a = myShip.sog ** 2 - target.sog ** 2, b = 2 * distance * target.sog * Math.cos(angleA_rad), c = -(distance ** 2);
         let timeHours = -1;
@@ -103,14 +109,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function populateTargetTable(targets) {
         allDomElements.tableBody.innerHTML = '';
-        
-        // CALCOLA LA DISTANZA PER OGNI NAVE
         targets.forEach(vessel => {
             if (myShip.lat !== null && vessel.lat !== null) {
                 vessel.distance = calculateDistance(myShip.lat, myShip.lon, vessel.lat, vessel.lon);
-            } else {
-                vessel.distance = null;
-            }
+            } else { vessel.distance = null; }
         });
 
         const compare = (a, b) => {
@@ -120,12 +122,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return currentSort.direction === 'desc' ? comparison * -1 : comparison;
         };
         targets.sort(compare);
-
         targets.forEach(vessel => {
             const row = document.createElement('tr');
             row.dataset.mmsi = vessel.mmsi;
             row.innerHTML = `
-                <td>${vessel.name || 'N/D'}</td>
+                <td>${vessel.name || 'N/A'}</td>
                 <td>${getShipTypeDescription(vessel.shipType)}</td>
                 <td>${vessel.mmsi}</td>
                 <td>${vessel.callsign || '--'}</td>
@@ -141,27 +142,24 @@ document.addEventListener('DOMContentLoaded', function() {
     function selectTarget(mmsi) {
         selectedTargetMmsi = mmsi;
         const target = aisTargets[mmsi];
-        if (target) { allDomElements.targetName.textContent = `${target.name || 'N/D'} (${mmsi})`; }
+        if (target) { allDomElements.targetName.textContent = `${target.name || 'N/A'} (${mmsi})`; }
         if (ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ type: 'SUBSCRIBE_TARGET', mmsi: mmsi })); }
         allDomElements.modal.style.display = 'none'; updateUI();
     }
 
     function connect() {
         ws = new WebSocket(`ws://${window.location.host}`);
-        ws.onopen = () => { allDomElements.status.textContent = 'Connesso'; allDomElements.status.style.backgroundColor = '#28a745'; };
-        ws.onclose = () => { allDomElements.status.textContent = 'Disconnesso...'; allDomElements.status.style.backgroundColor = '#dc3545'; selectedTargetMmsi = null; setTimeout(connect, 3000); };
-        ws.onerror = () => { allDomElements.status.textContent = 'Errore'; allDomElements.status.style.backgroundColor = '#ffc107'; ws.close(); };
+        ws.onopen = () => { allDomElements.status.textContent = 'Connected'; allDomElements.status.style.backgroundColor = '#28a745'; };
+        ws.onclose = () => { allDomElements.status.textContent = 'Disconnected...'; allDomElements.status.style.backgroundColor = '#dc3545'; selectedTargetMmsi = null; setTimeout(connect, 3000); };
+        ws.onerror = () => { allDomElements.status.textContent = 'Error'; allDomElements.status.style.backgroundColor = '#ffc107'; ws.close(); };
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'SELF_UPDATE') { realMyShip = data.payload; applySimulationState(); }
                 else if (data.type === 'AIS_UPDATE') {
-                    // Aggiorna la cache locale dei target
                     const mmsi = data.payload.mmsi;
                     if (!aisTargets[mmsi]) aisTargets[mmsi] = {};
                     Object.assign(aisTargets[mmsi], data.payload);
-
-                    // Se il client è iscritto a questo target, aggiorna la UI principale
                     if (selectedTargetMmsi === mmsi) {
                        updateUI();
                     }
@@ -170,13 +168,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.payload.forEach(v => { if (!aisTargets[v.mmsi]) aisTargets[v.mmsi] = {}; Object.assign(aisTargets[v.mmsi], v); });
                     populateTargetTable(data.payload);
                 }
-            } catch(e) { console.error("Errore nel messaggio:", e); }
+            } catch(e) { console.error("Error processing message:", e); }
         };
     }
 
     allDomElements.simCheckbox.addEventListener('change', e => { isSimulationActive = e.target.checked; allDomElements.simInputs.classList.toggle('disabled', !isSimulationActive); applySimulationState(); });
     allDomElements.simSogInput.addEventListener('input', () => { if (isSimulationActive) applySimulationState(); });
-    allDomElements.selectTargetBtn.addEventListener('click', () => { if (ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ type: 'REQUEST_VESSEL_LIST' })); allDomElements.modal.style.display = 'block'; } else { alert("Connessione al server non attiva."); } });
+    allDomElements.selectTargetBtn.addEventListener('click', () => { if (ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ type: 'REQUEST_VESSEL_LIST' })); allDomElements.modal.style.display = 'block'; } else { alert("Server connection not active."); } });
     allDomElements.closeModalBtn.addEventListener('click', () => { allDomElements.modal.style.display = 'none'; });
     window.addEventListener('click', e => { if (e.target == allDomElements.modal) { allDomElements.modal.style.display = 'none'; } });
     document.querySelectorAll('#target-table th').forEach(header => {

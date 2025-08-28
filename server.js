@@ -19,22 +19,22 @@ const httpServer = http.createServer(app);
 const wss = new WebSocketServer({ server: httpServer });
 
 wss.on('connection', ws => {
-    console.log('[WebApp] Browser connesso!');
+    console.log('[WebApp] Browser connected!');
     ws.subscribedMmsi = null;
     ws.on('message', message => {
         try {
             const data = JSON.parse(message.toString());
             if (data.type === 'SUBSCRIBE_TARGET') {
                 ws.subscribedMmsi = data.mmsi;
-                console.log(`[WebApp] Client si è iscritto a MMSI: ${data.mmsi}`);
+                console.log(`[WebApp] Client subscribed to MMSI: ${data.mmsi}`);
             } else if (data.type === 'REQUEST_VESSEL_LIST') {
-                console.log(`[WebApp] Client ha richiesto la lista delle navi.`);
+                console.log(`[WebApp] Client requested vessel list.`);
                 const aisVessels = Object.values(vessels).filter(v => v.mmsi !== selfMmsi);
                 ws.send(JSON.stringify({ type: 'VESSEL_LIST', payload: aisVessels }));
             }
-        } catch (e) { console.error("[WebApp] Errore nel messaggio dal client:", e); }
+        } catch (e) { console.error("[WebApp] Error processing message from client:", e); }
     });
-    ws.on('close', () => console.log('[WebApp] Browser disconnesso.'));
+    ws.on('close', () => console.log('[WebApp] Browser disconnected.'));
 });
 
 function broadcastAisUpdate(vesselData) {
@@ -79,26 +79,25 @@ async function fetchInitialVesselData(mmsi) {
             if (newShipType && vessels[mmsi].shipType !== newShipType) { vessels[mmsi].shipType = newShipType; updated = true; }
 
             if (updated) {
-                // RIGA DI DEBUG RIMOSSA
                 broadcastAisUpdate(vessels[mmsi]);
             }
         }
     } catch (error) {
-        // Ignora l'errore
+        // Ignore error
     }
 }
 
 function connectToSignalK() {
     const subscription = { "context": "*", "subscribe": [{ "path": "*" }] };
-    console.log(`[SignalK] Connessione a: ${SIGNALK_URL}`);
+    console.log(`[SignalK] Connecting to: ${SIGNALK_URL}`);
     const skSocket = new WebSocket(SIGNALK_URL);
 
-    skSocket.on('open', () => { console.log('[SignalK] Connessione riuscita!'); skSocket.send(JSON.stringify(subscription)); });
+    skSocket.on('open', () => { console.log('[SignalK] Connection successful!'); skSocket.send(JSON.stringify(subscription)); });
 
     skSocket.on('message', (data) => {
         try {
             const msg = JSON.parse(data.toString());
-            if (msg.self && !selfMmsi) { selfMmsi = msg.self.split(':').pop(); console.log(`[SignalK] MMSI della nostra barca identificato: ${selfMmsi}`); }
+            if (msg.self && !selfMmsi) { selfMmsi = msg.self.split(':').pop(); console.log(`[SignalK] Own vessel MMSI identified: ${selfMmsi}`); }
             if (msg.updates) {
                 msg.updates.forEach(update => {
                     const context = msg.context;
@@ -126,11 +125,11 @@ function connectToSignalK() {
                     else { broadcastAisUpdate(vessels[mmsi]); }
                 });
             }
-        } catch (e) { /* Ignora errori */ }
+        } catch (e) { /* Ignore errors */ }
     });
 
-    skSocket.on('error', (err) => console.error('[SignalK] Errore:', err.message));
-    skSocket.on('close', () => { console.log('[SignalK] Connessione chiusa. Riconnessione tra 5s...'); setTimeout(connectToSignalK, 5000); });
+    skSocket.on('error', (err) => console.error('[SignalK] Error:', err.message));
+    skSocket.on('close', () => { console.log('[SignalK] Connection closed. Reconnecting in 5s...'); setTimeout(connectToSignalK, 5000); });
 }
 
 setInterval(() => {
@@ -142,8 +141,8 @@ setInterval(() => {
             removedCount++;
         }
     }
-    if (removedCount > 0) { console.log(`[System] Rimossi ${removedCount} target non più visibili.`); }
+    if (removedCount > 0) { console.log(`[System] Removed ${removedCount} stale targets.`); }
 }, 60 * 1000);
 
-httpServer.listen(HTTP_PORT, '0.0.0.0', () => console.log(`[HTTP] Server avviato sulla porta ${HTTP_PORT}`));
+httpServer.listen(HTTP_PORT, '0.0.0.0', () => console.log(`[HTTP] Server started on port ${HTTP_PORT}`));
 connectToSignalK();

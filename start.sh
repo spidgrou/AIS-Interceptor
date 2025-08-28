@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Naviga alla directory dello script, non importa da dove viene lanciato
+# Navigate to the script's directory, regardless of where it's called from
 cd "$(dirname "$0")"
 
-# Esegui il server node. Il percorso di node è assoluto per sicurezza.
+# Execute the node server with the absolute path to node for reliability
 /usr/bin/node server.js

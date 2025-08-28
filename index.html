@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,12 +9,12 @@
 <body>
     <div class="container">
         <h1>AIS Interceptor Dashboard</h1>
-        <div id="status" style="background-color: #ffc107;">Connessione in corso...</div>
-        <h2>Mia Barca</h2>
+        <div id="status" style="background-color: #ffc107;">Connecting...</div>
+        <h2>My Ship</h2>
         <div id="simulation-controls">
             <div class="sim-main-toggle">
                 <input type="checkbox" id="simulation-checkbox">
-                <label for="simulation-checkbox">Simula movimento</label>
+                <label for="simulation-checkbox">Simulate Movement</label>
             </div>
             <div id="simulation-inputs">
                 <label for="sim-sog-input">SOG (kn):</label>
@@ -22,36 +22,36 @@
             </div>
         </div>
         <div class="data-grid my-ship-grid">
-            <div class="data-box"><div class="label">Latitudine</div><div class="value" id="my-lat">--</div></div>
-            <div class="data-box"><div class="label">Longitudine</div><div class="value" id="my-lon">--</div></div>
+            <div class="data-box"><div class="label">Latitude</div><div class="value" id="my-lat">--</div></div>
+            <div class="data-box"><div class="label">Longitude</div><div class="value" id="my-lon">--</div></div>
             <div class="data-box" id="my-sog-box"><div class="label">SOG (kn)</div><div class="value" id="my-sog">--</div></div>
             <div class="data-box" id="my-cog-box"><div class="label">COG (°)</div><div class="value" id="my-cog">--</div></div>
         </div>
-        <h2>Intercettazione</h2>
+        <h2>Interception</h2>
         <div id="target-selection">
-            <button id="select-target-btn">Seleziona un Target AIS</button>
-            <p>Target Selezionato: <strong id="selected-target-name">Nessuno</strong></p>
+            <button id="select-target-btn">Select an AIS Target</button>
+            <p>Selected Target: <strong id="selected-target-name">None</strong></p>
         </div>
         <div class="data-grid interception-grid">
-            <div class="data-box"><div class="label">Rotta per Intercettare</div><div class="value" id="interception-course">--</div></div>
-            <div class="data-box"><div class="label">Tempo all'interc.</div><div class="value" id="interception-time">--</div></div>
-            <div class="data-box"><div class="label">Distanza all'interc.</div><div class="value" id="interception-distance">--</div></div>
+            <div class="data-box"><div class="label">Intercept Course</div><div class="value" id="interception-course">--</div></div>
+            <div class="data-box"><div class="label">Time to Intercept</div><div class="value" id="interception-time">--</div></div>
+            <div class="data-box"><div class="label">Distance to Intercept</div><div class="value" id="interception-distance">--</div></div>
         </div>
     </div>
 
     <div id="target-modal" class="modal">
         <div class="modal-content">
             <span id="close-modal-btn" class="close-btn">&times;</span>
-            <h2>Seleziona Target</h2>
+            <h2>Select Target</h2>
             <div class="table-container">
                 <table id="target-table">
                     <thead>
                         <tr>
-                            <th data-sort="name">Nome Nave</th>
-                            <th data-sort="shipType">Tipo Nave</th>
+                            <th data-sort="name">Vessel Name</th>
+                            <th data-sort="shipType">Vessel Type</th>
                             <th data-sort="mmsi">MMSI</th>
                             <th data-sort="callsign">Call Sign</th>
-                            <th data-sort="distance">Distanza</th> <!-- NUOVA COLONNA -->
+                            <th data-sort="distance">Distance</th>
                             <th data-sort="sog">SOG (kn)</th>
                             <th data-sort="cog">COG (°)</th>
                         </tr>
