@@ -1,0 +1,44 @@
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 1rem; color: #1c1e21; }
+.container { max-width: 800px; margin: auto; background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+h1, h2 { border-bottom: 2px solid #007bff; padding-bottom: 0.5rem; margin-top: 1.5rem; color: #007bff; }
+h1 { margin-top: 0; }
+.data-grid { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
+.my-ship-grid { grid-template-columns: 2fr 2fr 1fr 1fr; }
+.data-box { background-color: #f8f9fa; padding: 1rem; border-radius: 6px; text-align: center; border: 1px solid #dee2e6; transition: background-color 0.3s, border-color 0.3s; }
+.data-box .label { font-size: 0.9em; color: #6c757d; text-transform: uppercase; }
+.data-box .value { font-size: 1.5em; font-weight: 600; color: #343a40; margin-top: 0.25rem; word-wrap: break-word; transition: color 0.3s; }
+.interception-grid { grid-template-columns: 1fr 1fr 1fr; margin-top: 1.5rem; }
+#interception-course, #interception-time, #interception-distance { color: #dc3545; font-weight: bold; }
+#status { padding: 0.75rem; text-align: center; margin-bottom: 1.5rem; border-radius: 5px; color: #fff; font-weight: 500; transition: background-color 0.3s; }
+#target-selection { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+#select-target-btn { background-color: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 5px; font-size: 1em; cursor: pointer; transition: background-color 0.2s; }
+#select-target-btn:hover { background-color: #0056b3; }
+#selected-target-name { font-weight: 600; color: #343a40; }
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+.modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 900px; border-radius: 8px; position: relative; }
+.close-btn { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
+.close-btn:hover, .close-btn:focus { color: black; }
+
+.table-container { max-height: 60vh; overflow-y: auto; border: 1px solid #ddd; }
+#target-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+#target-table thead th { position: sticky; top: 0; background-color: #f2f2f2; z-index: 1; user-select: none; cursor: pointer; }
+#target-table th, #target-table td { border-bottom: 1px solid #ddd; padding: 10px 8px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#target-table tbody tr:hover { background-color: #f5f5f5; }
+#target-table-body tr { cursor: pointer; }
+
+/* LARGHEZZE COLONNE AGGIORNATE */
+th[data-sort="name"] { width: 20%; }
+th[data-sort="shipType"] { width: 20%; }
+th[data-sort="mmsi"] { width: 15%; }
+th[data-sort="callsign"] { width: 13%; }
+th[data-sort="distance"] { width: 12%; }
+th[data-sort="sog"], th[data-sort="cog"] { width: 10%; }
+
+#simulation-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-bottom: 1rem; background-color: #f0f2f5; border: 1px solid #dee2e6; padding: 0.5rem 1rem; border-radius: 6px; }
+.sim-main-toggle { display: flex; align-items: center; gap: 0.5rem; }
+#simulation-inputs { display: flex; align-items: center; gap: 0.5rem; }
+#simulation-inputs label { font-size: 0.9em; }
+#simulation-inputs input[type="number"] { width: 60px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; }
+#simulation-inputs.disabled { opacity: 0.5; pointer-events: none; }
+.data-box.simulated-value { background-color: #fffbe6; border-color: #ffe58f; }
+.data-box.simulated-value .value { color: #d97706; }
