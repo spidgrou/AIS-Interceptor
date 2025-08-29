@@ -1,0 +1,22 @@
+{
+  "name": "signalk-ais-interceptor",
+  "version": "1.0.0",
+  "description": "A webapp plugin for Signal K to calculate and display vessel interception solutions.",
+  "main": "index.js",
+  "keywords": [
+    "signalk-node-server-plugin",
+    "signalk-webapp"
+  ],
+  "signalk": {
+    "displayName": "AIS Interceptor",
+    "appIcon": "icon.jpg"
+  },
+  "author": {
+    "name": "spidgrou"
+  },
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spidgrou/AIS-Interceptor.git"
+  }
+}
