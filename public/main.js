@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let aisTargets = {};
     let selectedTargetMmsi = null;
     let currentSort = { column: 'distance', direction: 'asc' };
-    let pluginConfig = { cruiseSpeed: 5, maxSpeed: 25 };
+    let pluginConfig = { cruiseSpeed: 5, maxSpeed: 25 }; // Default values
 
     const allDomElements = {
         status: document.getElementById('status'),
@@ -31,11 +31,13 @@ document.addEventListener('DOMContentLoaded', function() {
         tableBody: document.getElementById('target-table-body'),
         simCheckbox: document.getElementById('simulation-checkbox'),
         simInputs: document.getElementById('simulation-inputs'),
-        simSogInput: document.getElementById('sim-sog-input')
+        simSogInput: document.getElementById('sim-sog-input'),
+        displayCruiseSpeed: document.getElementById('display-cruise-speed'),
+        displayMaxSpeed: document.getElementById('display-max-speed')
     };
 
     // =================================================================
-    // --- UTILITY AND CALCULATION FUNCTIONS ---
+    // --- UTILITY FUNCTIONS (Unchanged) ---
     // =================================================================
     function getShipTypeDescription(typeId) 
       { if (!typeId) return 'N/A'; 
@@ -44,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         51: "Search & Rescue", 52: "Tug", 53: "Port Tender", 54: "Anti-pollution", 55: "Law Enforce", 58: "Medical", 60: "Passenger", 
                         61: "Passenger", 62: "Passenger", 70: "Cargo", 71: "Cargo (Haz-A)", 72: "Cargo (Haz-B)", 80: "Tanker", 81: "Tanker (Haz-A)", 
                         82: "Tanker (Haz-B)", 90: "Other" }; 
-    return types[typeId] || types[Math.floor(typeId / 10) * 10] || 'N       /A'; }
+    return types[typeId] || types[Math.floor(typeId / 10) * 10] || 'N/A'; }
     
     function formatCoordinate(decimal, type) 
       { if (decimal === null || decimal === undefined) return '--'; 
@@ -60,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); }
 
     // =================================================================
-    // --- UI UPDATE FUNCTIONS ---
+    // --- UI UPDATE FUNCTIONS (Unchanged) ---
     // =================================================================
     function updateUI() {
         allDomElements.myLat.textContent = formatCoordinate(myShip.lat, 'lat');
@@ -114,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // =================================================================
-    // --- CORE INTERCEPTION LOGIC ---
+    // --- INTERCEPTION LOGIC (Unchanged) ---
     // =================================================================
     function getInterceptSolution(mySog, targetSog, targetCog, bearingToTarget, distanceNM) {
         const toRad = deg => deg * Math.PI / 180;
@@ -161,7 +163,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const bearingToTarget = toDeg(Math.atan2(Math.sin(toRad(targetLon - myShip.lon)) * Math.cos(toRad(targetLat)), 
           Math.cos(toRad(myShip.lat)) * Math.sin(toRad(targetLat)) - Math.sin(toRad(myShip.lat)) * Math.cos(toRad(targetLat)) * Math.cos(toRad(targetLon - myShip.lon))));
 
-        // CURRENT APPROACH (MAIN BOXES)
         if (myShip.sog < 0.2) { allDomElements.course.textContent = 'Stationary'; }
         else if (distanceNM < 1.0) { allDomElements.course.textContent = String(Math.round(bearingToTarget)).padStart(3, '0') + '°'; 
           allDomElements.time.textContent = 'Close Quarters'; allDomElements.distance.textContent = 'N/A'; }
@@ -177,7 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 allDomElements.course.textContent = 'Too Slow'; } }
         }
         
-        // SLOW, CRUISE, & MAX APPROACH (COLORED TEXT)
         const targetSog = target.navigation?.speedOverGround?.value ? target.navigation.speedOverGround.value * 1.94384 : null;
         const targetCog = target.navigation?.courseOverGroundTrue?.value ? target.navigation.courseOverGroundTrue.value * 180 / Math.PI : null;
         if (distanceNM > 1.0 && targetSog !== null && targetCog !== null) {
@@ -190,57 +190,97 @@ document.addEventListener('DOMContentLoaded', function() {
             if (pluginConfig.cruiseSpeed > minSpeed) {
                 const cruiseSolution = getInterceptSolution(pluginConfig.cruiseSpeed, targetSog, targetCog, bearingToTarget, distanceNM);
                 if (cruiseSolution) 
-                  { allDomElements.cruiseApproachInfo.textContent = `Cruise approach (@${pluginConfig.cruiseSpeed.toFixed(1)} 
-                    kt): ${Math.round(cruiseSolution.course)}° / ${Math.round(cruiseSolution.time)} min / ${cruiseSolution.distance.toFixed(1)} NM`; }
+                  { allDomElements.cruiseApproachInfo.textContent = `Cruise approach (@${Number(pluginConfig.cruiseSpeed).toFixed(1)} kt): ${Math.round(cruiseSolution.course)}° / ${Math.round(cruiseSolution.time)} min / ${cruiseSolution.distance.toFixed(1)} NM`; }
             }
             if (pluginConfig.maxSpeed > minSpeed && pluginConfig.maxSpeed > pluginConfig.cruiseSpeed) {
                 const maxSolution = getInterceptSolution(pluginConfig.maxSpeed, targetSog, targetCog, bearingToTarget, distanceNM);
                 if (maxSolution) 
-                  { allDomElements.maxApproachInfo.textContent = `Max approach (@${pluginConfig.maxSpeed.toFixed(1)} 
-                    kt): ${Math.round(maxSolution.course)}° / ${Math.round(maxSolution.time)} min / ${maxSolution.distance.toFixed(1)} NM`; }
+                  { allDomElements.maxApproachInfo.textContent = `Max approach (@${Number(pluginConfig.maxSpeed).toFixed(1)} kt): ${Math.round(maxSolution.course)}° / ${Math.round(maxSolution.time)} min / ${maxSolution.distance.toFixed(1)} NM`; }
             }
         }
     }
     
     // =================================================================
-    // --- SIGNAL K INTEGRATION ---
+    // --- SIGNAL K INTEGRATION (Final Version) ---
     // =================================================================
-    async function fetchPluginConfig() 
-    { try 
-      { const response = await fetch('/signalk/v1/api/plugins/signalk-ais-interceptor/config'); 
-        if (response.ok) { pluginConfig = await response.json(); } } catch (e) { console.error("Could not fetch plugin config", e); } }
+    async function fetchPluginConfig() { 
+        try {
+            // Fetch the local config.json file directly.
+            const response = await fetch('config.json'); 
+            if (response.ok) {
+                pluginConfig = await response.json();
+                console.log('Configuration loaded from public/config.json:', pluginConfig);
+                
+                // Update the display with the loaded values
+                allDomElements.displayCruiseSpeed.textContent = Number(pluginConfig.cruiseSpeed || 0).toFixed(1);
+                allDomElements.displayMaxSpeed.textContent = Number(pluginConfig.maxSpeed || 0).toFixed(1);
+            } else {
+                 console.error('Failed to fetch local config.json, status:', response.status);
+            }
+        } catch (e) { 
+            console.error("Could not fetch or parse local config.json", e); 
+        } 
+    }
     
-    function selectTarget(mmsi) 
-      { selectedTargetMmsi = mmsi; 
+    function selectTarget(mmsi) { 
+        selectedTargetMmsi = mmsi; 
         const target = aisTargets[mmsi]; 
-        if (target) { allDomElements.targetName.textContent = `${target.name || 'N/A'} (${mmsi})`; } allDomElements.modal.style.display = 'none'; updateUI(); }
+        if (target) { allDomElements.targetName.textContent = `${target.name || 'N/A'} (${mmsi})`; } 
+        allDomElements.modal.style.display = 'none'; 
+        updateUI(); 
+    }
     
-    async function fetchInitialSelfData() 
-      { try { 
-        const response = await fetch('/signalk/v1/api/vessels/self'); 
-          if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); } 
-        const selfData = await response.json(); 
-          realMyShip.lat = selfData.navigation?.position?.value?.latitude; 
-          realMyShip.lon = selfData.navigation?.position?.value?.longitude; 
-          realMyShip.sog = (selfData.navigation?.speedOverGround?.value * 1.94384) || 0.0; 
-          realMyShip.cog = selfData.navigation?.courseOverGroundTrue?.value ? selfData.navigation.courseOverGroundTrue.value * 180 / Math.PI : null; 
-          realMyShip.mmsi = selfData.mmsi; applySimulationState(); } catch (error) { console.error("Could not fetch 'self' data:", error); } }
+    async function fetchInitialSelfData() { 
+        try { 
+            const response = await fetch('/signalk/v1/api/vessels/self'); 
+            if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); } 
+            const selfData = await response.json(); 
+            realMyShip.lat = selfData.navigation?.position?.value?.latitude; 
+            realMyShip.lon = selfData.navigation?.position?.value?.longitude; 
+            realMyShip.sog = (selfData.navigation?.speedOverGround?.value * 1.94384) || 0.0; 
+            realMyShip.cog = selfData.navigation?.courseOverGroundTrue?.value ? selfData.navigation.courseOverGroundTrue.value * 180 / Math.PI : null; 
+            realMyShip.mmsi = selfData.mmsi; 
+            applySimulationState(); 
+        } catch (error) { 
+            console.error("Could not fetch 'self' data:", error); 
+        } 
+    }
     
     function connect() {
         const host = window.location.host;
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const skUrl = `${protocol}//${host}/signalk/v1/stream?subscribe=all`;
         const ws = new WebSocket(skUrl);
-        ws.onopen = () => { allDomElements.status.textContent = 'Connected'; 
-          allDomElements.status.style.backgroundColor = '#28a745'; fetchPluginConfig().then(fetchInitialSelfData); };
-        ws.onclose = () => { allDomElements.status.textContent = 'Disconnected...'; 
-          allDomElements.status.style.backgroundColor = '#dc3545'; setTimeout(connect, 3000); };
-        ws.onmessage = (event) => { const delta = JSON.parse(event.data); 
-          if (!delta.updates || !delta.context) { return; } 
-          if (delta.context === 'vessels.self') { delta.updates.forEach(update => { update.values.forEach(item => { 
-          if (item.path === 'navigation.position') { realMyShip.lat = item.value.latitude; realMyShip.lon = item.value.longitude; } 
-          else if (item.path === 'navigation.speedOverGround') { realMyShip.sog = item.value * 1.94384 || 0.0; } 
-          else if (item.path === 'navigation.courseOverGroundTrue') { realMyShip.cog = item.value * 180 / Math.PI; } }); }); applySimulationState(); } };
+        ws.onopen = async () => { 
+            allDomElements.status.textContent = 'Connected'; 
+            allDomElements.status.style.backgroundColor = '#28a745'; 
+            await fetchPluginConfig();
+            await fetchInitialSelfData();
+        };
+        ws.onclose = () => { 
+            allDomElements.status.textContent = 'Disconnected...'; 
+            allDomElements.status.style.backgroundColor = '#dc3545'; 
+            setTimeout(connect, 3000); 
+        };
+        ws.onmessage = (event) => { 
+            const delta = JSON.parse(event.data); 
+            if (!delta.updates || !delta.context) { return; } 
+            if (delta.context === 'vessels.self') { 
+                delta.updates.forEach(update => { 
+                    update.values.forEach(item => { 
+                        if (item.path === 'navigation.position') { 
+                            realMyShip.lat = item.value.latitude; 
+                            realMyShip.lon = item.value.longitude; 
+                        } else if (item.path === 'navigation.speedOverGround') { 
+                            realMyShip.sog = item.value * 1.94384 || 0.0; 
+                        } else if (item.path === 'navigation.courseOverGroundTrue') { 
+                            realMyShip.cog = item.value * 180 / Math.PI; 
+                        } 
+                    }); 
+                }); 
+                applySimulationState(); 
+            } 
+        };
     }
 
     async function requestVesselList() {
@@ -248,19 +288,33 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/signalk/v1/api/vessels?query={"lastSeen":{"$gt":"-5m"}}');
             if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
             const vesselsData = await response.json();
-            aisTargets = {}; Object.values(vesselsData).forEach(vessel => { if (vessel.mmsi && vessel.mmsi !== realMyShip.mmsi) { aisTargets[vessel.mmsi] = vessel; } });
+            aisTargets = {}; 
+            Object.values(vesselsData).forEach(vessel => { 
+                if (vessel.mmsi && vessel.mmsi !== realMyShip.mmsi) { 
+                    aisTargets[vessel.mmsi] = vessel; 
+                } 
+            });
             populateTargetTable(Object.values(aisTargets));
             allDomElements.modal.style.display = 'block';
-        } catch (error) { console.error('Failed to fetch vessel list:', error); alert(`Could not fetch vessel list. Check browser console for error details.`); }
+        } catch (error) { 
+            console.error('Failed to fetch vessel list:', error); 
+            alert(`Could not fetch vessel list. Check browser console for error details.`); 
+        }
     }
     
     // =================================================================
-    // --- EVENT LISTENERS AND INITIALIZATION ---
+    // --- EVENT LISTENERS ---
     // =================================================================
     allDomElements.selectTargetBtn.addEventListener('click', requestVesselList);
-    allDomElements.simCheckbox.addEventListener('change', e => { isSimulationActive = e.target.checked; 
-    allDomElements.simInputs.classList.toggle('disabled', !isSimulationActive); applySimulationState(); });
-    allDomElements.simSogInput.addEventListener('input', () => { if (isSimulationActive) applySimulationState(); });
+    allDomElements.simCheckbox.addEventListener('change', e => { 
+        isSimulationActive = e.target.checked; 
+        allDomElements.simInputs.classList.toggle('disabled', !isSimulationActive); 
+        applySimulationState(); 
+    });
+    allDomElements.simSogInput.addEventListener('input', () => { 
+        if (isSimulationActive) applySimulationState(); 
+    });
+    
     allDomElements.closeModalBtn.addEventListener('click', () => { allDomElements.modal.style.display = 'none'; });
     window.addEventListener('click', e => { if (e.target == allDomElements.modal) { allDomElements.modal.style.display = 'none'; } });
     document.querySelectorAll('#target-table th').forEach(header => {

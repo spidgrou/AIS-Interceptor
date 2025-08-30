@@ -1,21 +1,36 @@
+// English comments and code as requested.
+const fs = require('fs');
+const path = require('path');
+
 module.exports = function(app) {
   const plugin = {};
   plugin.id = 'signalk-ais-interceptor';
   plugin.name = 'AIS Interceptor';
-  plugin.description = 'Plugin for the AIS Interceptor webapp';
-
-  let pluginOptions = {}; // Variable to store the plugin's configuration
+  plugin.description = 'A webapp for AIS interception calculations.';
 
   plugin.start = function(options) {
-    app.debug('AIS Interceptor plugin started.');
-    pluginOptions = options; // Save the options when the plugin starts
+    app.debug('Plugin started. Writing configuration to public directory...');
+
+    try {
+      // Define the target path for the configuration file inside the public folder.
+      // __dirname is the absolute path to the directory containing this file (index.js).
+      const configPath = path.join(__dirname, 'public', 'config.json');
+
+      // Write the options received from Signal K server to the public config.json file.
+      // The frontend will fetch this file directly.
+      fs.writeFileSync(configPath, JSON.stringify(options, null, 2));
+
+      app.debug('Successfully wrote configuration to:', configPath);
+    } catch (e) {
+      app.error('Failed to write public config.json file:', e);
+    }
   };
 
   plugin.stop = function() {
-    app.debug('AIS Interceptor plugin stopped.');
+    app.debug('Plugin stopped.');
   };
 
-  // This defines the fields that will appear in the Plugin Config page
+  // The schema is still required for the Admin UI to show the configuration fields.
   plugin.schema = {
     type: 'object',
     properties: {
@@ -33,13 +48,8 @@ module.exports = function(app) {
       }
     }
   };
-  
-  // This creates an API endpoint for the frontend to fetch the configuration
-  plugin.registerWithRouter = function(router) {
-    router.get('/config', (req, res) => {
-      res.json(pluginOptions);
-    });
-  };
+
+  // No custom API routes are needed anymore. registerWithRouter can be removed.
 
   return plugin;
 };
